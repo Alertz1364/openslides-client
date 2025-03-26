@@ -1,0 +1,49 @@
+name: Refactoring Workflow
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  refactor:
+    name: Refactor Code
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v2
+
+    - name: Set up Python
+      uses: actions/setup-python@v2
+      with:
+        python-version: '3.x'
+
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install flake8 black
+
+    - name: Run flake8
+      run: |
+        flake8 .
+      continue-on-error: true
+
+    - name: Run black
+      run: |
+        black --check .
+      continue-on-error: true
+
+    - name: Commit changes
+      if: ${{ steps.black.outcome == 'failure' }}
+      run: |
+        git config --global user.name "github-actions"
+        git config --global user.email "github-actions@github.com"
+        git checkout -b refactor-branch
+        black .
+        git add .
+        git commit -m "Refactor code using Black"
+        git push -u origin refactor-branch
